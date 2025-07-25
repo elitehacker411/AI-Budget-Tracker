@@ -1,0 +1,257 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Plus, TrendingUp, TrendingDown, Wallet, LogOut, UserIcon } from 'lucide-react'
+
+export interface Transaction {
+  id: string
+  amount: number
+  description: string
+  category: string
+  type: "income" | "expense"
+  date: string
+}
+
+export interface Budget {
+  category: string
+  limit: number
+  spent: number
+}
+
+const INITIAL_BUDGETS: Budget[] = [
+  { category: "Food", limit: 500, spent: 0 },
+  { category: "Transportation", limit: 200, spent: 0 },
+  { category: "Entertainment", limit: 150, spent: 0 },
+  { category: "Shopping", limit: 300, spent: 0 },
+  { category: "Bills", limit: 800, spent: 0 },
+  { category: "Healthcare", limit: 200, spent: 0 },
+]
+
+interface AppUser {
+  name: string
+  email: string
+}
+
+export default function BudgetTracker() {
+  const [user, setUser] = useState<AppUser | null>(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [budgets, setBudgets] = useState<Budget[]>(INITIAL_BUDGETS)
+
+  const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
+  const totalExpenses = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
+  const balance = totalIncome - totalExpenses
+
+  const handleLogin = (email: string, password: string) => {
+    setUser({
+      name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
+      email,
+    })
+  }
+
+  const handleSignup = (name: string, email: string, password: string) => {
+    setUser({ name, email })
+  }
+
+  const handleLogout = () => {
+    setUser(null)
+    setTransactions([])
+  }
+
+  const addTransaction = (transaction: Omit<Transaction, "id">) => {
+    const newTransaction = {
+      ...transaction,
+      id: Date.now().toString(),
+    }
+    setTransactions((prev) => [newTransaction, ...prev])
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="text-center mb-8">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-slate-900 mb-4">AI Budget Tracker</h1>
+            <p className="text-xl text-slate-600 mb-8">Smart financial management with AI insights</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={() => setShowAuth(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold text-lg"
+              >
+                Get Started
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowAuth(true)}
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 px-8 py-3 rounded-xl font-semibold text-lg"
+              >
+                Sign In
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {showAuth && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>Welcome</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button 
+                    onClick={() => handleLogin("demo@example.com", "password")}
+                    className="w-full"
+                  >
+                    Demo Login
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAuth(false)}
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        <div className="bg-white rounded-2xl shadow-sm border p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold text-slate-900">AI Budget Tracker</h1>
+              <p className="text-slate-600">Welcome back, {user.name}!</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => addTransaction({
+                  amount: 50,
+                  description: "Sample Transaction",
+                  category: "Food",
+                  type: "expense",
+                  date: new Date().toISOString().split('T')[0]
+                })}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium shadow-sm"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add Transaction
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-3 rounded-xl bg-transparent"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-white border-0 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-slate-600">Total Balance</CardTitle>
+                <div className="p-2 bg-slate-100 rounded-lg">
+                  <Wallet className="h-4 w-4 text-slate-600" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className={`text-3xl font-bold mb-1 ${balance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                ${balance.toFixed(2)}
+              </div>
+              <p className="text-xs text-slate-500">{balance >= 0 ? "Positive balance" : "Negative balance"}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-slate-600">Total Income</CardTitle>
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-3xl font-bold text-emerald-600 mb-1">${totalIncome.toFixed(2)}</div>
+              <p className="text-xs text-slate-500">This month</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-slate-600">Total Expenses</CardTitle>
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-3xl font-bold text-red-500 mb-1">${totalExpenses.toFixed(2)}</div>
+              <p className="text-xs text-slate-500">This month</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <CardHeader className="border-b border-slate-100 p-6">
+            <CardTitle className="text-xl font-semibold text-slate-900">Recent Transactions</CardTitle>
+            <CardDescription className="text-slate-600">Your latest financial activities</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {transactions.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No transactions yet. Click "Add Transaction" to get started!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {transactions.slice(0, 10).map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-full ${
+                        transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                      }`}>
+                        {transaction.type === 'income' ? (
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{transaction.description}</p>
+                        <p className="text-sm text-gray-500">
+                          {transaction.category} • {transaction.date}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`font-semibold ${
+                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
